@@ -19,7 +19,8 @@ import {
   Construction,
   Cpu,
   LineChart,
-  Check
+  Check,
+  Volume2
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -50,6 +51,16 @@ export default function StudentDashboard() {
   const [tasks, setTasks] = useState<{ id: string; original: string; completed: boolean }[]>([]);
   const [newTaskInput, setNewTaskInput] = useState('');
   const [addingTask, setAddingTask] = useState(false);
+
+  const playAudio = (text: string) => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-US';
+      utterance.rate = 0.85;
+      window.speechSynthesis.speak(utterance);
+    }
+  };
   
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
 
@@ -424,12 +435,30 @@ export default function StudentDashboard() {
               <div className="mt-5 space-y-4">
                 {glossary.map((word) => (
                   <div key={word.id} className="pb-3 border-b border-white/5 last:border-b-0 last:pb-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-xs text-white">{word.palabra}</span>
-                      <span className="text-[9px] text-cyan-400 font-bold px-1.5 py-0.2 bg-cyan-950/20 border border-cyan-500/10 rounded">{word.pronunciacion}</span>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-xs text-white">{word.palabra}</span>
+                        <span className="text-[9px] text-cyan-400 font-bold px-1.5 py-0.2 bg-cyan-950/20 border border-cyan-500/10 rounded">{word.pronunciacion}</span>
+                      </div>
+                      <button
+                        onClick={() => playAudio(word.palabra)}
+                        className="p-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-cyan-400 transition-all flex items-center justify-center cursor-pointer"
+                        title="Escuchar Pronunciación"
+                      >
+                        <Volume2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                     <span className="text-[11px] text-slate-400 block mt-0.5">{word.traduccion}</span>
-                    <span className="text-[10px] text-slate-500 italic block mt-1">Ex: "{word.ejemplo_ingles}"</span>
+                    <div className="flex items-center justify-between gap-2 mt-1">
+                      <span className="text-[10px] text-slate-500 italic block">Ex: "{word.ejemplo_ingles}"</span>
+                      <button
+                        onClick={() => playAudio(word.ejemplo_ingles)}
+                        className="text-[9px] text-slate-500 hover:text-cyan-400 flex items-center gap-0.5 cursor-pointer"
+                        title="Escuchar Oración"
+                      >
+                        <Volume2 className="w-2.5 h-2.5" />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>

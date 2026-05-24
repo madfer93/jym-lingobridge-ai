@@ -24,7 +24,8 @@ import {
   Layers,
   Languages,
   ArrowLeftRight,
-  Plus
+  Plus,
+  Volume2
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -103,7 +104,21 @@ export default function ChallengesPage() {
       return prev + spacing + translateOutput;
     });
   };
-  
+  const playAudio = (text: string) => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'en-US';
+      utterance.rate = 0.85;
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+
+  // Estados para el Historial de Entregas Pasadas
+  const [dashboardTab, setDashboardTab] = useState<'available' | 'history'>('available');
+  const [practicesHistory, setPracticesHistory] = useState<any[]>([]);
+  const [selectedHistoryItem, setSelectedHistoryItem] = useState<any | null>(null);
+
   // Celebración de Subida de Nivel
   const [showLevelUpModal, setShowLevelUpModal] = useState(false);
   const [levelUpData, setLevelUpData] = useState<{ oldLevel: string; newLevel: string } | null>(null);
@@ -136,10 +151,13 @@ export default function ChallengesPage() {
         // 3. Obtener Historial de Prácticas
         const { data: practices, error: practicesError } = await supabase
           .from('historial_practicas')
-          .select('ejercicio, resultado, retroalimentacion')
-          .eq('user_id', user.id);
+          .select('id, ejercicio, resultado, retroalimentacion, created_at, tipo_practica')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
 
         if (!practicesError && practices) {
+          setPracticesHistory(practices);
+
           // Extraer retos aprobados
           const approvedChallenges = practices
             .filter(p => p.resultado === 'aprobado')
@@ -183,6 +201,25 @@ export default function ChallengesPage() {
     loadData();
   }, [router]);
 
+  // 1. Auto-cargar borrador al seleccionar un reto
+  useEffect(() => {
+    if (selectedChallenge) {
+      const savedDraft = localStorage.getItem(`draft_${selectedChallenge.id}`);
+      if (savedDraft) {
+        setSubmissionText(savedDraft);
+      } else {
+        setSubmissionText('');
+      }
+    }
+  }, [selectedChallenge]);
+
+  // 2. Auto-guardar borrador al escribir
+  useEffect(() => {
+    if (selectedChallenge && submissionText) {
+      localStorage.setItem(`draft_${selectedChallenge.id}`, submissionText);
+    }
+  }, [submissionText, selectedChallenge]);
+
   const handleSubmitChallenge = async () => {
     if (!profile || !selectedChallenge || !submissionText.trim()) return;
 
@@ -215,6 +252,7 @@ export default function ChallengesPage() {
       // Si aprobó, marcar reto como completado
       if (data.score >= 60) {
         setCompletedChallengeIds(prev => [...prev, selectedChallenge.id]);
+        localStorage.removeItem(`draft_${selectedChallenge.id}`);
         
         // Disparar Level Up si corresponde
         if (data.level_up && data.new_level) {
@@ -228,6 +266,17 @@ export default function ChallengesPage() {
           setProfile(prev => prev ? { ...prev, nivel_cefr: data.new_level } : null);
         }
       }
+
+      // Añadir la entrega calificada al historial local de prácticas
+      const newPractice = {
+        id: Math.random().toString(),
+        ejercicio: selectedChallenge.id,
+        resultado: data.score >= 60 ? 'aprobado' : 'corregido',
+        retroalimentacion: JSON.stringify(data),
+        created_at: new Date().toISOString(),
+        tipo_practica: 'chat_tutor'
+      };
+      setPracticesHistory(prev => [newPractice, ...prev]);
     } catch (err: any) {
       console.error(err);
       setErrorMsg(err.message || 'Error al intentar calificar el desafío técnico.');
@@ -384,107 +433,211 @@ export default function ChallengesPage() {
               </p>
             </div>
 
-            {/* SECCIÓN 1: RECOMENDADAS PARA TU SECTOR */}
-            <div className="space-y-4">
-              <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                <Award className="w-4 h-4 text-purple-400" />
-                Recomendadas para tu Sector ({profile?.enfoque_industria.toUpperCase()})
-              </h2>
-              
-              <div className="grid md:grid-cols-2 gap-6">
-                {suggestedChallenges.map((challenge) => {
-                  const isCompleted = completedChallengeIds.includes(challenge.id);
-                  return (
-                    <div 
-                      key={challenge.id}
-                      onClick={() => {
-                        setSelectedChallenge(challenge);
-                        setSubmissionText('');
-                        setEvaluation(null);
-                        setErrorMsg('');
-                      }}
-                      className="p-6 rounded-2xl border border-purple-500/10 hover:border-purple-500/30 bg-slate-900/20 hover:bg-slate-900/30 transition-all cursor-pointer flex flex-col justify-between group relative overflow-hidden"
-                    >
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-start">
-                          <span className="px-2 py-0.5 rounded text-[8px] font-bold bg-purple-500/20 border border-purple-400/20 text-purple-300">
-                            Nivel {challenge.level}
-                          </span>
-                          <span className="text-[9px] font-bold text-cyan-400 block">{challenge.xp} XP</span>
-                        </div>
-                        <h3 className="font-outfit font-black text-base text-white group-hover:text-purple-400 transition-colors">
-                          {challenge.title}
-                        </h3>
-                        <p className="text-slate-400 text-xs leading-relaxed line-clamp-2">
-                          {challenge.description}
-                        </p>
-                      </div>
-                      
-                      <div className="flex justify-between items-center mt-6 pt-4 border-t border-white/5">
-                        <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Ver Escenario Técnico</span>
-                        {isCompleted ? (
-                          <span className="px-2 py-1 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-bold text-[9px] flex items-center gap-1">
-                            ✓ Completado
-                          </span>
-                        ) : (
-                          <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-purple-400 group-hover:translate-x-1 transition-all" />
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+            {/* Tabs de Navegación del Dashboard */}
+            <div className="flex gap-3 border-b border-white/5 pb-2">
+              <button
+                onClick={() => setDashboardTab('available')}
+                className={`px-4 py-2.5 rounded-xl font-outfit font-extrabold text-xs tracking-wide uppercase transition-all cursor-pointer ${
+                  dashboardTab === 'available'
+                  ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/15'
+                  : 'bg-white/5 border border-white/5 text-slate-400 hover:text-white'
+                }`}
+              >
+                Retos Disponibles
+              </button>
+              <button
+                onClick={() => setDashboardTab('history')}
+                className={`px-4 py-2.5 rounded-xl font-outfit font-extrabold text-xs tracking-wide uppercase transition-all cursor-pointer flex items-center gap-1.5 ${
+                  dashboardTab === 'history'
+                  ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/15'
+                  : 'bg-white/5 border border-white/5 text-slate-400 hover:text-white'
+                }`}
+              >
+                <span>Mi Historial ({practicesHistory.length})</span>
+              </button>
             </div>
 
-            {/* SECCIÓN 2: OTROS SECTORES DISPONIBLES */}
-            <div className="space-y-4 pt-6">
-              <h2 className="text-sm font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-cyan-400" />
-                Otros Desafíos Técnicos Disponibles
-              </h2>
-              
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {otherChallenges.map((challenge) => {
-                  const isCompleted = completedChallengeIds.includes(challenge.id);
-                  return (
-                    <div 
-                      key={challenge.id}
-                      onClick={() => {
-                        setSelectedChallenge(challenge);
-                        setSubmissionText('');
-                        setEvaluation(null);
-                        setErrorMsg('');
-                      }}
-                      className="p-5 rounded-2xl border border-white/5 hover:border-white/10 bg-slate-900/10 hover:bg-slate-900/20 transition-all cursor-pointer flex flex-col justify-between group"
-                    >
-                      <div className="space-y-3">
-                        <div className="flex justify-between items-center">
-                          <span className="px-2 py-0.5 rounded text-[8px] font-bold bg-slate-800 border border-white/5 text-slate-400">
-                            Nivel {challenge.level} ({challenge.industry})
-                          </span>
-                          <span className="text-[9px] font-bold text-slate-400">{challenge.xp} XP</span>
+            {dashboardTab === 'available' ? (
+              <>
+                {/* SECCIÓN 1: RECOMENDADAS PARA TU SECTOR */}
+                <div className="space-y-4">
+                  <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                    <Award className="w-4 h-4 text-purple-400" />
+                    Recomendadas para tu Sector ({profile?.enfoque_industria.toUpperCase()})
+                  </h2>
+                  
+                  <div className="grid md:grid-cols-2 gap-6">
+                    {suggestedChallenges.map((challenge) => {
+                      const isCompleted = completedChallengeIds.includes(challenge.id);
+                      return (
+                        <div 
+                          key={challenge.id}
+                          onClick={() => {
+                            setSelectedChallenge(challenge);
+                            setSubmissionText('');
+                            setEvaluation(null);
+                            setErrorMsg('');
+                          }}
+                          className="p-6 rounded-2xl border border-purple-500/10 hover:border-purple-500/30 bg-slate-900/20 hover:bg-slate-900/30 transition-all cursor-pointer flex flex-col justify-between group relative overflow-hidden"
+                        >
+                          <div className="space-y-3">
+                            <div className="flex justify-between items-start">
+                              <span className="px-2 py-0.5 rounded text-[8px] font-bold bg-purple-500/20 border border-purple-400/20 text-purple-300">
+                                Nivel {challenge.level}
+                              </span>
+                              <span className="text-[9px] font-bold text-cyan-400 block">{challenge.xp} XP</span>
+                            </div>
+                            <h3 className="font-outfit font-black text-base text-white group-hover:text-purple-400 transition-colors">
+                              {challenge.title}
+                            </h3>
+                            <p className="text-slate-400 text-xs leading-relaxed line-clamp-2">
+                              {challenge.description}
+                            </p>
+                          </div>
+                          
+                          <div className="flex justify-between items-center mt-6 pt-4 border-t border-white/5">
+                            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Ver Escenario Técnico</span>
+                            {isCompleted ? (
+                              <span className="px-2 py-1 rounded bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-bold text-[9px] flex items-center gap-1">
+                                ✓ Completado
+                              </span>
+                            ) : (
+                              <ArrowRight className="w-4 h-4 text-slate-500 group-hover:text-purple-400 group-hover:translate-x-1 transition-all" />
+                            )}
+                          </div>
                         </div>
-                        <h3 className="font-outfit font-extrabold text-sm text-slate-200 group-hover:text-cyan-400 transition-colors">
-                          {challenge.title}
-                        </h3>
-                        <p className="text-slate-500 text-xs leading-relaxed line-clamp-2">
-                          {challenge.description}
-                        </p>
-                      </div>
-                      
-                      <div className="flex justify-between items-center mt-5 pt-3 border-t border-white/5 text-[9px] font-bold uppercase tracking-wider text-slate-600 group-hover:text-cyan-400">
-                        <span>Iniciar Tarea</span>
-                        {isCompleted ? (
-                          <span className="text-emerald-500 font-bold">✓ Listo</span>
-                        ) : (
-                          <ArrowRight className="w-3.5 h-3.5" />
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* SECCIÓN 2: OTROS SECTORES DISPONIBLES */}
+                <div className="space-y-4 pt-6">
+                  <h2 className="text-sm font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4 text-cyan-400" />
+                    Otros Desafíos Técnicos Disponibles
+                  </h2>
+                  
+                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {otherChallenges.map((challenge) => {
+                      const isCompleted = completedChallengeIds.includes(challenge.id);
+                      return (
+                        <div 
+                          key={challenge.id}
+                          onClick={() => {
+                            setSelectedChallenge(challenge);
+                            setSubmissionText('');
+                            setEvaluation(null);
+                            setErrorMsg('');
+                          }}
+                          className="p-5 rounded-2xl border border-white/5 hover:border-white/10 bg-slate-900/10 hover:bg-slate-900/20 transition-all cursor-pointer flex flex-col justify-between group"
+                        >
+                          <div className="space-y-3">
+                            <div className="flex justify-between items-center">
+                              <span className="px-2 py-0.5 rounded text-[8px] font-bold bg-slate-800 border border-white/5 text-slate-400">
+                                Nivel {challenge.level} ({challenge.industry})
+                              </span>
+                              <span className="text-[9px] font-bold text-slate-400">{challenge.xp} XP</span>
+                            </div>
+                            <h3 className="font-outfit font-extrabold text-sm text-slate-200 group-hover:text-cyan-400 transition-colors">
+                              {challenge.title}
+                            </h3>
+                            <p className="text-slate-500 text-xs leading-relaxed line-clamp-2">
+                              {challenge.description}
+                            </p>
+                          </div>
+                          
+                          <div className="flex justify-between items-center mt-5 pt-3 border-t border-white/5 text-[9px] font-bold uppercase tracking-wider text-slate-600 group-hover:text-cyan-400">
+                            <span>Iniciar Tarea</span>
+                            {isCompleted ? (
+                              <span className="text-emerald-500 font-bold">✓ Listo</span>
+                            ) : (
+                              <ArrowRight className="w-3.5 h-3.5" />
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
+            ) : (
+              /* HISTORIAL DE ENTREGAS PASADAS */
+              <div className="space-y-6">
+                <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                  <Award className="w-4 h-4 text-purple-400" />
+                  Historial de tus Entregas Evaluadas
+                </h2>
+
+                {practicesHistory.length === 0 ? (
+                  <div className="p-8 rounded-2xl border border-white/5 bg-slate-900/10 text-center space-y-3">
+                    <p className="text-slate-500 text-sm">Aún no tienes entregas evaluadas por la IA.</p>
+                    <button
+                      onClick={() => setDashboardTab('available')}
+                      className="px-4 py-2 rounded-xl bg-purple-600 text-white font-bold text-xs hover:bg-purple-500 transition-all cursor-pointer"
+                    >
+                      Ver retos disponibles
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid gap-4">
+                    {practicesHistory.map((p) => {
+                      const challengeObj = challenges.find(c => c.id === p.ejercicio);
+                      let score = 0;
+                      let feedback = '';
+                      try {
+                        const parsed = JSON.parse(p.retroalimentacion);
+                        score = parsed.score || 0;
+                        feedback = parsed.feedback || '';
+                      } catch (e) {}
+
+                      return (
+                        <div
+                          key={p.id}
+                          className="p-5 rounded-2xl border border-white/5 bg-[#090b16] flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:border-purple-500/20 transition-all"
+                        >
+                          <div className="space-y-1.5 overflow-hidden w-full">
+                            <div className="flex items-center gap-2">
+                              <span className={`px-2 py-0.5 rounded text-[8px] font-bold ${
+                                score >= 60 
+                                ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400' 
+                                : 'bg-amber-500/10 border border-amber-500/20 text-amber-400'
+                              }`}>
+                                {score >= 60 ? 'Aprobado ✓' : 'Corregido ⚠'}
+                              </span>
+                              <span className="text-[10px] text-slate-500 font-bold">
+                                {new Date(p.created_at).toLocaleDateString()}
+                              </span>
+                            </div>
+                            <h3 className="font-outfit font-extrabold text-sm text-white">
+                              {challengeObj?.title || 'Reto de Redacción'}
+                            </h3>
+                            <p className="text-slate-400 text-xs line-clamp-1 italic">
+                              "{feedback}"
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-4 shrink-0 self-end sm:self-center">
+                            <div className="text-right">
+                              <span className="block text-[8px] text-slate-500 font-bold uppercase tracking-wider">Nota</span>
+                              <span className={`font-outfit font-black text-lg ${
+                                score >= 60 ? 'text-emerald-400' : 'text-amber-400'
+                              }`}>{score}/100</span>
+                            </div>
+                            <button
+                              onClick={() => setSelectedHistoryItem(p)}
+                              className="px-4 py-2 rounded-xl bg-purple-600/10 hover:bg-purple-600/20 border border-purple-500/20 text-xs text-purple-300 font-bold cursor-pointer transition-all"
+                            >
+                              Ver Reporte
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-            </div>
+            )}
 
           </div>
         ) : (
@@ -564,13 +717,20 @@ export default function ChallengesPage() {
                       return (
                         <span 
                           key={idx}
-                          className={`px-2 py-1 rounded-md text-[10px] font-bold border transition-colors ${
+                          className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-bold border transition-colors ${
                             included 
                             ? 'bg-emerald-500/20 border-emerald-400/20 text-emerald-300' 
                             : 'bg-slate-800 border-white/5 text-slate-400'
                           }`}
                         >
-                          {voc}
+                          <span>{voc}</span>
+                          <button
+                            onClick={() => playAudio(voc)}
+                            className="p-0.5 rounded hover:bg-slate-700/50 hover:text-cyan-400 transition-all flex items-center justify-center cursor-pointer"
+                            title={`Escuchar pronunciación de ${voc}`}
+                          >
+                            <Volume2 className="w-2.5 h-2.5" />
+                          </button>
                         </span>
                       );
                     })}
@@ -845,6 +1005,135 @@ export default function ChallengesPage() {
         )}
 
       </main>
+
+      {/* MODAL / SUB-PÁGINA DE DETALLE DE ENTREGA HISTÓRICA */}
+      {selectedHistoryItem && (
+        <div className="fixed inset-0 z-50 bg-[#070913]/90 backdrop-blur-md flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-[#0b0d1e] border border-white/10 rounded-2xl p-6 md:p-8 max-w-3xl w-full max-h-[90vh] overflow-y-auto space-y-6 relative shadow-2xl">
+            {/* Close Button */}
+            <button
+              onClick={() => setSelectedHistoryItem(null)}
+              className="absolute top-4 right-4 p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 text-slate-400 hover:text-white transition-all cursor-pointer flex items-center justify-center"
+            >
+              <XCircle className="w-5 h-5" />
+            </button>
+
+            {/* Header */}
+            <div>
+              <span className="px-2 py-0.5 rounded text-[8px] font-bold bg-purple-500/20 border border-purple-400/20 text-purple-300">
+                HISTORIAL DE EVALUACIÓN
+              </span>
+              <h2 className="font-outfit text-2xl font-black text-white mt-2">
+                {challenges.find(c => c.id === selectedHistoryItem.ejercicio)?.title || 'Reto Técnico'}
+              </h2>
+              <p className="text-slate-500 text-[10px] mt-1 font-bold uppercase tracking-wider">
+                Entregado el {new Date(selectedHistoryItem.created_at).toLocaleString()}
+              </p>
+            </div>
+
+            {/* Score and CEFR assessment */}
+            {(() => {
+              let score = 0;
+              let feedback = '';
+              let cefr = 'A1';
+              let errors: any[] = [];
+              let polished = '';
+              try {
+                const parsed = JSON.parse(selectedHistoryItem.retroalimentacion);
+                score = parsed.score || 0;
+                feedback = parsed.feedback || '';
+                cefr = parsed.cefr_assessment || '';
+                errors = parsed.errors || [];
+                polished = parsed.polished_version || '';
+              } catch (e) {}
+
+              return (
+                <div className="space-y-6">
+                  <div className={`p-5 rounded-xl border flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 ${
+                    score >= 60 ? 'border-emerald-500/20 bg-emerald-950/10' : 'border-amber-500/20 bg-amber-950/10'
+                  }`}>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className={`px-2 py-0.5 rounded text-[8px] font-bold ${
+                          score >= 60 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'
+                        }`}>
+                          {score >= 60 ? 'Aprobado ✓' : 'Requiere Corrección ⚠'}
+                        </span>
+                        <span className="text-xs text-slate-400">Nivel Estimado: <strong>{cefr}</strong></span>
+                      </div>
+                      <p className="text-slate-300 text-xs leading-relaxed italic pr-4">
+                        "{feedback}"
+                      </p>
+                    </div>
+                    <div className="text-center sm:text-right shrink-0">
+                      <span className="block text-[8px] font-bold text-slate-500 uppercase tracking-widest">Puntaje</span>
+                      <span className={`font-outfit text-3xl font-black ${
+                        score >= 60 ? 'text-emerald-400' : 'text-amber-400'
+                      }`}>{score}/100</span>
+                    </div>
+                  </div>
+
+                  {/* Lista de Errores Corregidos */}
+                  {errors.length > 0 && (
+                    <div className="space-y-3">
+                      <h4 className="font-outfit font-bold text-xs text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                        <BookOpen className="w-4 h-4 text-purple-400" />
+                        Gramática Corregida por el Coach ({errors.length})
+                      </h4>
+                      <div className="space-y-2.5 max-h-[220px] overflow-y-auto pr-1">
+                        {errors.map((errItem: any, idx: number) => (
+                          <div key={idx} className="p-3.5 rounded-xl border border-white/5 bg-slate-900/10 space-y-1.5">
+                            <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+                              <span className="px-1.5 py-0.2 rounded bg-red-500/10 text-red-400 line-through">"{errItem.original}"</span>
+                              <span className="text-slate-500">➔</span>
+                              <span className="px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-400 font-bold">"{errItem.correction}"</span>
+                            </div>
+                            <p className="text-[10px] text-slate-400 leading-relaxed">
+                              <strong>¿Por qué?</strong> {errItem.reason}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Versión Pulida de Referencia */}
+                  {polished && (
+                    <div className="p-5 rounded-xl border border-purple-500/10 bg-purple-950/5 space-y-3">
+                      <div className="flex justify-between items-center gap-2">
+                        <span className="text-[10px] font-extrabold text-purple-300 uppercase tracking-wider flex items-center gap-1">
+                          <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                          Versión Pulida de Referencia
+                        </span>
+                        <button
+                          onClick={() => playAudio(polished)}
+                          className="px-2.5 py-1 rounded bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/20 text-purple-300 font-bold text-[9px] flex items-center gap-1 cursor-pointer transition-all shrink-0"
+                        >
+                          <Volume2 className="w-3.5 h-3.5 animate-pulse" />
+                          Escuchar Lectura Completa
+                        </button>
+                      </div>
+                      <p className="text-slate-200 text-xs leading-relaxed italic bg-black/30 p-3 rounded-lg border border-white/5 select-all whitespace-pre-line">
+                        {polished}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* Footer buttons */}
+            <div className="flex justify-end gap-3 pt-4 border-t border-white/5">
+              <button
+                onClick={() => setSelectedHistoryItem(null)}
+                className="px-5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs cursor-pointer transition-all"
+              >
+                Entendido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* MODAL FULLSCREEN DE CELEBRACIÓN DE NIVEL (Sparkles Level Up!) */}
       {showLevelUpModal && levelUpData && (
