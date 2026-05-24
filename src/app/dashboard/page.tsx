@@ -50,6 +50,14 @@ export default function StudentDashboard() {
   const [tasks, setTasks] = useState<{ id: string; original: string; completed: boolean }[]>([]);
   const [newTaskInput, setNewTaskInput] = useState('');
   const [addingTask, setAddingTask] = useState(false);
+  
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setLogoUrl(localStorage.getItem('lingobridge_logo'));
+    }
+  }, []);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -173,17 +181,23 @@ export default function StudentDashboard() {
         <div className="space-y-8">
           {/* Branding */}
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-cyan-500 flex items-center justify-center">
-              <GraduationCap className="w-4 h-4 text-white" />
-            </div>
-            <div>
-              <span className="font-outfit font-extrabold text-md tracking-tight text-white block">
-                JyM LingoBridge
-              </span>
-              <span className="block text-[8px] font-bold text-cyan-400 tracking-widest uppercase">
-                AULA DIGITAL ESTUDIANTE
-              </span>
-            </div>
+            {logoUrl ? (
+              <img src={logoUrl} alt="JyM LingoBridge AI" className="h-8 object-contain" />
+            ) : (
+              <>
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-600 to-cyan-500 flex items-center justify-center">
+                  <GraduationCap className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <span className="font-outfit font-extrabold text-md tracking-tight text-white block">
+                    JyM LingoBridge
+                  </span>
+                  <span className="block text-[8px] font-bold text-cyan-400 tracking-widest uppercase">
+                    AULA DIGITAL ESTUDIANTE
+                  </span>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Tarjeta Perfil Rápido */}

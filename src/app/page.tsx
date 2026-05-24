@@ -22,6 +22,14 @@ import {
 } from 'lucide-react';
 
 export default function LandingPage() {
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setLogoUrl(localStorage.getItem('lingobridge_logo'));
+    }
+  }, []);
+
   const [selectedIndustry, setSelectedIndustry] = useState<'construccion' | 'tecnologia' | 'negocios'>('construccion');
   const [simulatorState, setSimulatorState] = useState<'unstarted' | 'solving' | 'success'>('unstarted');
   const [simulatorBlocks, setSimulatorBlocks] = useState([
@@ -86,17 +94,23 @@ export default function LandingPage() {
       <header className="border-b border-white/5 backdrop-blur-md sticky top-0 z-50 bg-[#070913]/80">
         <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-purple-600/25">
-              <GraduationCap className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <span className="font-outfit font-extrabold text-xl tracking-tight bg-gradient-to-r from-white via-slate-200 to-purple-400 bg-clip-text text-transparent">
-                JyM LingoBridge
-              </span>
-              <span className="block text-[10px] font-bold text-cyan-400 tracking-widest uppercase">
-                AI EDUCATION ENGINE
-              </span>
-            </div>
+            {logoUrl ? (
+              <img src={logoUrl} alt="JyM LingoBridge AI" className="h-10 object-contain" />
+            ) : (
+              <>
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-purple-600/25">
+                  <GraduationCap className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <span className="font-outfit font-extrabold text-xl tracking-tight bg-gradient-to-r from-white via-slate-200 to-purple-400 bg-clip-text text-transparent">
+                    JyM LingoBridge
+                  </span>
+                  <span className="block text-[10px] font-bold text-cyan-400 tracking-widest uppercase">
+                    AI EDUCATION ENGINE
+                  </span>
+                </div>
+              </>
+            )}
           </div>
           <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-300">
             <a href="#metodo" className="hover:text-purple-400 transition-colors">Método Activo</a>

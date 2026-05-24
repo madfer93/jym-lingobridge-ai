@@ -18,6 +18,14 @@ import Link from 'next/link';
 
 export default function LoginPage() {
   const router = useRouter();
+  const [logoIconUrl, setLogoIconUrl] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setLogoIconUrl(localStorage.getItem('lingobridge_logo_icon'));
+    }
+  }, []);
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -129,9 +137,13 @@ export default function LoginPage() {
         
         {/* Cabecera del Formulario */}
         <div className="text-center mb-8">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-purple-600/20 mx-auto mb-4">
-            <GraduationCap className="w-6 h-6 text-white" />
-          </div>
+          {logoIconUrl ? (
+            <img src={logoIconUrl} alt="Logo Icon" className="w-12 h-12 rounded-xl object-contain mx-auto mb-4" />
+          ) : (
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-purple-600/20 mx-auto mb-4">
+              <GraduationCap className="w-6 h-6 text-white" />
+            </div>
+          )}
           <h1 className="font-outfit text-2xl font-black bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
             {authMode === 'login' ? 'Acceder a mi Aula Virtual' : 'Crear mi Cuenta de Estudiante'}
           </h1>
