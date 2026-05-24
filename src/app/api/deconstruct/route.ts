@@ -36,7 +36,7 @@ Categorías permitidas para cada objeto en el arreglo "words" (usar únicamente 
 Responde ÚNICAMENTE con el objeto JSON, sin ningún texto introductorio, explicaciones fuera del JSON o bloques de Markdown.`;
 
     const response = await groq.chat.completions.create({
-      model: 'llama3-8b-8192', // Modelo súper rápido para deconstrucción instantánea
+      model: 'llama-3.1-8b-instant', // Modelo súper rápido para deconstrucción instantánea
       messages: [
         { role: 'system', content: promptSystem },
         { role: 'user', content: `Deconstruye la siguiente oración: "${sentence}"` }

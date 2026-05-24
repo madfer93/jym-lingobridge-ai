@@ -240,6 +240,14 @@ export default function StudentDashboard() {
               <Layers className="w-4 h-4 text-cyan-400" />
               Deconstructor Visual
             </Link>
+            
+            <Link 
+              href="/dashboard/challenges" 
+              className="w-full px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-3 hover:bg-white/5 border border-transparent hover:border-white/5 text-slate-400 hover:text-white transition-all block"
+            >
+              <Sparkles className="w-4 h-4 text-purple-400 animate-pulse" />
+              Tareas Evaluadas por IA
+            </Link>
           </nav>
         </div>
 

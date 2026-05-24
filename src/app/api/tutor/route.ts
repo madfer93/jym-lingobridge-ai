@@ -42,7 +42,7 @@ EJEMPLO DE DIÁLOGO SOCRÁTICO CONTEXTUALIZADO:
     ];
 
     const response = await groq.chat.completions.create({
-      model: 'llama3-70b-8192', // Modelo premium de Groq con el máximo nivel de razonamiento y empatía
+      model: 'llama-3.3-70b-versatile', // Modelo premium de Groq con el máximo nivel de razonamiento y empatía
       messages: fullMessages,
       temperature: 0.7,
       max_tokens: 1024
