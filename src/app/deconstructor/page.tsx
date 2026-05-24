@@ -46,7 +46,7 @@ interface ChatMessage {
   content: string;
 }
 
-export default function DeconstructorModule() {
+function DeconstructorContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialTask = searchParams.get('task') || '';
@@ -580,5 +580,20 @@ export default function DeconstructorModule() {
       </main>
 
     </div>
+  );
+}
+
+export default function DeconstructorModule() {
+  return (
+    <React.Suspense fallback={
+      <div className="min-h-screen bg-[#070913] text-slate-100 flex flex-col justify-center items-center">
+        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-600 to-cyan-500 flex items-center justify-center animate-spin">
+          <GraduationCap className="w-6 h-6 text-white" />
+        </div>
+        <p className="text-slate-400 text-xs mt-4">Abriendo laboratorio de sintaxis...</p>
+      </div>
+    }>
+      <DeconstructorContent />
+    </React.Suspense>
   );
 }
