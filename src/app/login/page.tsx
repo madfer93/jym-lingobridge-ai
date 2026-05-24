@@ -10,7 +10,9 @@ import {
   ArrowRight, 
   AlertCircle, 
   Loader2,
-  ChevronLeft 
+  ChevronLeft,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -18,6 +20,9 @@ export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
@@ -62,6 +67,10 @@ export default function LoginPage() {
         // Registrar Nuevo Estudiante
         if (!nombre) {
           throw new Error('El nombre completo es obligatorio.');
+        }
+
+        if (password !== confirmPassword) {
+          throw new Error('Las contraseñas no coinciden. Por favor, verifícalas.');
         }
 
         // 1. Crear usuario en Supabase Auth
@@ -179,15 +188,46 @@ export default function LoginPage() {
             <div className="relative">
               <Lock className="absolute left-4 top-3.5 w-4 h-4 text-slate-500" />
               <input 
-                type="password" 
+                type={showPassword ? 'text' : 'password'} 
                 required
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 bg-black/40 border border-white/10 rounded-xl text-sm focus:border-purple-500 focus:outline-none transition-all placeholder:text-slate-600 text-white font-medium"
+                className="w-full pl-12 pr-12 py-3 bg-black/40 border border-white/10 rounded-xl text-sm focus:border-purple-500 focus:outline-none transition-all placeholder:text-slate-600 text-white font-medium"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-3.5 text-slate-500 hover:text-slate-300 transition-colors focus:outline-none"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
           </div>
+
+          {authMode === 'register' && (
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Confirmar Contraseña</label>
+              <div className="relative">
+                <Lock className="absolute left-4 top-3.5 w-4 h-4 text-slate-500" />
+                <input 
+                  type={showConfirmPassword ? 'text' : 'password'} 
+                  required
+                  placeholder="••••••••"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full pl-12 pr-12 py-3 bg-black/40 border border-white/10 rounded-xl text-sm focus:border-purple-500 focus:outline-none transition-all placeholder:text-slate-600 text-white font-medium"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-4 top-3.5 text-slate-500 hover:text-slate-300 transition-colors focus:outline-none"
+                >
+                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+          )}
 
           {authMode === 'register' && (
             <div className="space-y-1.5">
