@@ -566,6 +566,18 @@ export default function ChallengesPage() {
                       className="w-full p-4 bg-black/40 border border-white/10 rounded-xl text-sm focus:border-purple-500 focus:outline-none transition-all placeholder:text-slate-700 text-white font-medium resize-none leading-relaxed"
                     />
 
+                    {selectedChallenge.hint && (
+                      <div className="p-4 rounded-xl border border-purple-500/10 bg-purple-950/20 space-y-2">
+                        <div className="flex items-center gap-1.5 text-purple-300 text-[10px] font-extrabold uppercase tracking-widest">
+                          <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+                          ¿Atascado? Pista Pedagógica del Coach
+                        </div>
+                        <p className="text-slate-300 text-xs leading-relaxed italic whitespace-pre-line">
+                          {selectedChallenge.hint}
+                        </p>
+                      </div>
+                    )}
+
                     {errorMsg && (
                       <p className="text-red-400 text-xs flex items-center gap-1.5"><AlertCircle className="w-3.5 h-3.5 shrink-0" /> {errorMsg}</p>
                     )}

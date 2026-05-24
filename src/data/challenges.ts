@@ -8,6 +8,7 @@ export interface Challenge {
   industry: 'construccion' | 'tecnologia' | 'negocios';
   level: 'A1' | 'A2' | 'B1' | 'B2';
   xp: number;
+  hint?: string;
 }
 
 export const challenges: Challenge[] = [
@@ -25,7 +26,8 @@ export const challenges: Challenge[] = [
     vocabulary: ['bricks', 'concrete', 'safety helmet', 'received', 'on site'],
     industry: 'construccion',
     level: 'A1',
-    xp: 40
+    xp: 40,
+    hint: 'Pista del Coach 👷‍♂️ (Puedes guiarte con esta plantilla de ayuda):\n"Hi engineer, I received the concrete and bricks on site. Everything is good. I am wearing my safety helmet. Thank you!"\n(¡Tiene 24 palabras! Solo agrégale algo más como "have a good day" para pasar de las 30 palabras).'
   },
   {
     id: 'cons-a2-inspection',
@@ -41,7 +43,8 @@ export const challenges: Challenge[] = [
     vocabulary: ['scaffolding', 'safety', 'ready', 'inspect', 'secure'],
     industry: 'construccion',
     level: 'A2',
-    xp: 60
+    xp: 60,
+    hint: 'Pista del Coach 👷‍♂️ (Guíate con esta plantilla de ayuda):\n"Hello supervisor, I inspected the scaffolding today. The safety is perfect and all blocks are secure. We are ready to start the construction work now. Have a nice morning!"'
   },
   {
     id: 'cons-b1-delay',
@@ -56,7 +59,8 @@ export const challenges: Challenge[] = [
     vocabulary: ['foundation', 'deadline', 'delay', 'due to', 'postpone', 'schedule'],
     industry: 'construccion',
     level: 'B1',
-    xp: 80
+    xp: 80,
+    hint: 'Pista del Coach 👷‍♂️ (Estructura de apoyo):\n"Dear client, I am writing to inform you about a delay in our schedule due to heavy rains. We must postpone the concrete pouring for the foundation to ensure absolute safety. Consequently, the new deadline for the project will be adjusted. Thank you for your understanding."'
   },
   {
     id: 'cons-b2-incident',
@@ -71,7 +75,8 @@ export const challenges: Challenge[] = [
     vocabulary: ['scaffolding', 'foundation', 'mitigation plan', 'failure', 'structural integrity', 'corrective actions'],
     industry: 'construccion',
     level: 'B2',
-    xp: 100
+    xp: 100,
+    hint: 'Pista del Coach 👷‍♂️ (Guía de redacción):\nInicia con un resumen ejecutivo ("This report details the failure occurred in..."). Luego explica el incidente en el "scaffolding", confirma que la integridad estructural de la "foundation" no se vio comprometida, y finaliza presentando las "corrective actions" del "mitigation plan" para reanudar operaciones de forma segura.'
   },
 
   // --- TECNOLOGÍA ---
@@ -88,7 +93,8 @@ export const challenges: Challenge[] = [
     vocabulary: ['database', 'connection', 'error', 'help', 'not working'],
     industry: 'tecnologia',
     level: 'A1',
-    xp: 40
+    xp: 40,
+    hint: 'Pista del Coach 💻 (Puedes guiarte con esta plantilla de ayuda):\n"Hi team, I have a big error in the project. The database connection is not working. The local server is down. Please help me with this issue. Thanks!"'
   },
   {
     id: 'tech-a2-compile',
@@ -103,7 +109,8 @@ export const challenges: Challenge[] = [
     vocabulary: ['compile', 'code', 'repository', 'local server', 'failed'],
     industry: 'tecnologia',
     level: 'A2',
-    xp: 60
+    xp: 60,
+    hint: 'Pista del Coach 💻 (Puedes guiarte con esta plantilla de ayuda):\n"Hello team, I downloaded the new changes from the repository. However, the code does not compile on my local server. The command failed during the build process. Can you help me review the packages? Thank you."'
   },
   {
     id: 'tech-b1-deploy',
@@ -118,7 +125,8 @@ export const challenges: Challenge[] = [
     vocabulary: ['deployment', 'database', 'framework', 'environment variables', 'live', 'production'],
     industry: 'tecnologia',
     level: 'B1',
-    xp: 80
+    xp: 80,
+    hint: 'Pista del Coach 💻 (Estructura de apoyo):\n"To prepare the deployment for production, follow these steps. First, ensure the framework configuration is correct. Second, configure the database environment variables in Vercel. Finally, run the build command to trigger the deployment. Once completed, the local server code will be live on production."'
   },
   {
     id: 'tech-b2-postmortem',
@@ -133,7 +141,8 @@ export const challenges: Challenge[] = [
     vocabulary: ['root cause', 'database bottleneck', 'downtime', 'cache compilation', 'query optimization', 'preventive measures'],
     industry: 'tecnologia',
     level: 'B2',
-    xp: 100
+    xp: 100,
+    hint: 'Pista del Coach 💻 (Estructura de apoyo):\nOrganiza tu reporte en tres subtítulos técnicos:\n1. **Incident Summary:** Describe los 20 minutos de "downtime" en producción.\n2. **Root Cause Analysis:** Explica el "database bottleneck" ocasionado por la sobrecarga y el bloqueo de "cache compilation".\n3. **Preventive Actions:** Presenta la "query optimization" y el monitoreo adicional implementados como "preventive measures" de alto nivel.'
   },
 
   // --- NEGOCIOS ---
@@ -150,7 +159,8 @@ export const challenges: Challenge[] = [
     vocabulary: ['Dear', 'my name is', 'assistant', 'nice to meet you', 'contact me'],
     industry: 'negocios',
     level: 'A1',
-    xp: 40
+    xp: 40,
+    hint: 'Pista del Coach 💼 (Puedes guiarte con esta plantilla de ayuda):\n"Dear client, my name is Manuel. I am your business assistant for J&M Tech Solutions. Nice to meet you. Please contact me if you have any questions. Best regards!"'
   },
   {
     id: 'biz-a2-meeting',
@@ -165,7 +175,8 @@ export const challenges: Challenge[] = [
     vocabulary: ['meeting', 'schedule', 'agenda', 'update', 'discuss'],
     industry: 'negocios',
     level: 'A2',
-    xp: 60
+    xp: 60,
+    hint: 'Pista del Coach 💼 (Puedes guiarte con esta plantilla de ayuda):\n"Hi team, I want to schedule a brief meeting tomorrow morning. The agenda is to discuss the commercial updates of the week. Please check your schedule and attend. Your presence is very important for the team. Thank you!"'
   },
   {
     id: 'biz-b1-proposal',
@@ -180,7 +191,8 @@ export const challenges: Challenge[] = [
     vocabulary: ['agreement', 'deadline', 'subscription model', 'pricing options', 'proposal', 'deliverables'],
     industry: 'negocios',
     level: 'B1',
-    xp: 80
+    xp: 80,
+    hint: 'Pista del Coach 💼 (Estructura de apoyo):\n"Dear client, I am sending you our official commercial proposal for JyM LingoBridge. We offer flexible pricing options: an individual subscription model for $65,000 COP monthly, and an institutional plan for $280,000 COP. We aim to sign the agreement this week, and our team will deliver the software before the requested deadline. Please let me know your thoughts."'
   },
   {
     id: 'biz-b2-negotiation',
@@ -195,6 +207,7 @@ export const challenges: Challenge[] = [
     vocabulary: ['agreement', 'deadline', 'liability clause', 'mutual agreement', 'terms and conditions', 'mitigate risks'],
     industry: 'negocios',
     level: 'B2',
-    xp: 100
+    xp: 100,
+    hint: 'Pista del Coach 💼 (Estructura de apoyo):\nUtiliza una estructura de negociación diplomática:\n1. **Acknowledge:** Agradece su interés y valida la preocupación de sus abogados respecto a la "liability clause".\n2. **Counter-proposal:** Propón un tope de penalidad razonable que mitigue riesgos para ambos ("mitigate risks") pero manteniendo la "deadline" original como base.\n3. **Close:** Enfatiza que firmar este "agreement" será de beneficio mutuo ("mutual benefit") y solicita una breve llamada para definir los "terms and conditions" finales.'
   }
 ];
