@@ -21,7 +21,10 @@ import {
   HelpCircle,
   TrendingUp,
   FileCheck,
-  Layers
+  Layers,
+  Languages,
+  ArrowLeftRight,
+  Plus
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -64,6 +67,42 @@ export default function ChallengesPage() {
   const [submitting, setSubmitting] = useState(false);
   const [evaluation, setEvaluation] = useState<EvaluationResult | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
+
+  // Estados para el Traductor de Apoyo (100% Gratis & Client-Side)
+  const [showTranslator, setShowTranslator] = useState(false);
+  const [translateInput, setTranslateInput] = useState('');
+  const [translateOutput, setTranslateOutput] = useState('');
+  const [translateDirection, setTranslateDirection] = useState<'es|en' | 'en|es'>('es|en');
+  const [translating, setTranslating] = useState(false);
+
+  const handleTranslate = async () => {
+    if (!translateInput.trim()) return;
+    setTranslating(true);
+    try {
+      const response = await fetch(
+        `https://api.mymemory.translated.net/get?q=${encodeURIComponent(translateInput)}&langpair=${translateDirection}`
+      );
+      const data = await response.json();
+      if (data && data.responseData && data.responseData.translatedText) {
+        setTranslateOutput(data.responseData.translatedText);
+      } else {
+        setTranslateOutput('Error al obtener la traducción. Por favor reintente.');
+      }
+    } catch (err) {
+      console.error(err);
+      setTranslateOutput('Error de conexión. Inténtalo de nuevo.');
+    } finally {
+      setTranslating(false);
+    }
+  };
+
+  const handleInsertTranslation = () => {
+    if (!translateOutput.trim()) return;
+    setSubmissionText(prev => {
+      const spacing = prev.trim().length > 0 ? ' ' : '';
+      return prev + spacing + translateOutput;
+    });
+  };
   
   // Celebración de Subida de Nivel
   const [showLevelUpModal, setShowLevelUpModal] = useState(false);
@@ -565,6 +604,82 @@ export default function ChallengesPage() {
                       disabled={submitting}
                       className="w-full p-4 bg-black/40 border border-white/10 rounded-xl text-sm focus:border-purple-500 focus:outline-none transition-all placeholder:text-slate-700 text-white font-medium resize-none leading-relaxed"
                     />
+
+                    {/* Toggle del Traductor de Apoyo */}
+                    <div className="flex justify-between items-center bg-white/5 p-3 rounded-xl border border-white/5">
+                      <div className="flex items-center gap-2">
+                        <Languages className="w-4 h-4 text-cyan-400 animate-pulse" />
+                        <span className="text-xs font-bold text-slate-300">Traductor de Apoyo (100% Gratis)</span>
+                      </div>
+                      <button
+                        onClick={() => setShowTranslator(!showTranslator)}
+                        className="px-3 py-1 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-400/20 text-cyan-300 font-bold text-[10px] transition-all cursor-pointer"
+                      >
+                        {showTranslator ? 'Ocultar Traductor' : 'Mostrar Traductor'}
+                      </button>
+                    </div>
+
+                    {showTranslator && (
+                      <div className="p-4 rounded-xl border border-white/10 bg-black/30 space-y-3">
+                        <div className="flex justify-between items-center gap-4">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                            {translateDirection === 'es|en' ? 'Español ➔ Inglés' : 'Inglés ➔ Español'}
+                          </span>
+                          <button
+                            onClick={() => {
+                              setTranslateDirection(prev => prev === 'es|en' ? 'en|es' : 'es|en');
+                              setTranslateInput(translateOutput);
+                              setTranslateOutput('');
+                            }}
+                            className="p-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center cursor-pointer transition-all"
+                            title="Cambiar Idioma"
+                          >
+                            <ArrowLeftRight className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <textarea
+                              rows={3}
+                              value={translateInput}
+                              onChange={(e) => setTranslateInput(e.target.value)}
+                              placeholder={translateDirection === 'es|en' ? 'Escribe en español...' : 'Escribe en inglés...'}
+                              className="w-full p-2.5 bg-black/40 border border-white/5 rounded-lg text-xs text-white focus:outline-none focus:border-cyan-500 resize-none"
+                            />
+                            <button
+                              onClick={handleTranslate}
+                              disabled={translating || !translateInput.trim()}
+                              className="w-full py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-600 text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50 transition-all"
+                            >
+                              {translating ? (
+                                <>
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                  Traduciendo...
+                                </>
+                              ) : (
+                                'Traducir'
+                              )}
+                            </button>
+                          </div>
+
+                          <div className="flex flex-col justify-between p-2.5 bg-black/50 border border-white/5 rounded-lg min-h-[90px]">
+                            <p className="text-xs text-slate-300 leading-relaxed italic select-all">
+                              {translateOutput || 'La traducción aparecerá aquí...'}
+                            </p>
+                            {translateOutput && translateOutput !== 'Error al obtener la traducción. Por favor reintente.' && (
+                              <button
+                                onClick={handleInsertTranslation}
+                                className="mt-2 py-1 px-2.5 rounded bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/20 text-emerald-300 font-bold text-[10px] flex items-center justify-center gap-1 self-end transition-all cursor-pointer"
+                              >
+                                <Plus className="w-3 h-3" />
+                                Insertar en mi entrega
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     {selectedChallenge.hint && (
                       <div className="p-4 rounded-xl border border-purple-500/10 bg-purple-950/20 space-y-2">
