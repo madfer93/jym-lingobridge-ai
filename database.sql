@@ -17,15 +17,19 @@ CREATE TABLE IF NOT EXISTS perfiles_usuario (
 -- Habilitar RLS (Row Level Security) para perfiles
 ALTER TABLE perfiles_usuario ENABLE ROW LEVEL SECURITY;
 
--- Crear políticas para perfiles
+-- Crear políticas para perfiles (idempotente)
+DROP POLICY IF EXISTS "Permitir lectura de perfil propio" ON perfiles_usuario;
 CREATE POLICY "Permitir lectura de perfil propio" ON perfiles_usuario
     FOR SELECT USING (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Permitir inserción de perfil propio" ON perfiles_usuario;
 CREATE POLICY "Permitir inserción de perfil propio" ON perfiles_usuario
     FOR INSERT WITH CHECK (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Permitir modificación de perfil propio" ON perfiles_usuario;
 CREATE POLICY "Permitir modificación de perfil propio" ON perfiles_usuario
     FOR UPDATE USING (auth.uid() = id);
+
 
 
 -- 2. TABLA DE GLOSARIO DE TÉRMINOS CONTEXTUALIZADO (Cambridge/Oxford)
