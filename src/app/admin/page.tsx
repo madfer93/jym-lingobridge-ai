@@ -114,7 +114,7 @@ export default function AdminDashboard() {
   };
 
   const handleLogout = async () => {
-    await supabase.signOut();
+    await supabase.auth.signOut();
     router.push('/login');
   };
 
