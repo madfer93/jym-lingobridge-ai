@@ -17,7 +17,8 @@ import {
   UserCheck,
   TrendingUp,
   Settings,
-  AlertCircle
+  AlertCircle,
+  Cpu
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -38,12 +39,25 @@ export default function AdminDashboard() {
   const [updatingStudentId, setUpdatingStudentId] = useState<string | null>(null);
 
   // Estados para Branding & Tab active
-  const [activeTab, setActiveTab] = useState<'students' | 'branding'>('students');
+  const [activeTab, setActiveTab] = useState<'students' | 'branding' | 'b2b_classes' | 'config'>('students');
   const [customLogoUrl, setCustomLogoUrl] = useState<string | null>(null);
   const [customIconUrl, setCustomIconUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState<'logo' | 'icon' | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
+
+  // Estados de Configuración Dinámica (Wompi y Groq)
+  const [wompiConfig, setWompiConfig] = useState<any>({
+    wompi_public_key: '',
+    wompi_integrity_key: '',
+    wompi_merchant_id: '',
+    wompi_sandbox_mode: 'true',
+    wompi_enlace_estudiante: '',
+    wompi_enlace_institucional: ''
+  });
+  const [groqKeys, setGroqKeys] = useState<any[]>([]);
+  const [newGroqKey, setNewGroqKey] = useState({ key_value: '', key_label: '' });
+  const [configLoading, setConfigLoading] = useState(false);
 
   // Load from localStorage on client-side mount
   useEffect(() => {
@@ -59,6 +73,24 @@ export default function AdminDashboard() {
     planIndividualCount: students.length,
     ingresosProyectados: students.length * 65000,
     groqRequestsTotal: (students.length * 42) + 128 // llamadas estimadas
+  };
+
+  const fetchDynamicConfig = async () => {
+    try {
+      const resWompi = await fetch('/api/admin/config?type=wompi');
+      const dataWompi = await resWompi.json();
+      if (dataWompi.config) {
+        setWompiConfig((prev: any) => ({ ...prev, ...dataWompi.config }));
+      }
+
+      const resGroq = await fetch('/api/admin/config?type=groq');
+      const dataGroq = await resGroq.json();
+      if (dataGroq.keys) {
+        setGroqKeys(dataGroq.keys);
+      }
+    } catch (e) {
+      console.error('Error fetching config:', e);
+    }
   };
 
   useEffect(() => {
@@ -97,6 +129,9 @@ export default function AdminDashboard() {
         if (!studentsError && studentList) {
           setStudents(studentList);
         }
+
+        // Cargar config dinámica en segundo plano
+        fetchDynamicConfig();
 
       } catch (err) {
         console.error('Error verifying admin state:', err);
@@ -212,6 +247,108 @@ export default function AdminDashboard() {
     setUploadSuccess('¡Diseño visual restablecido al logo por defecto exitosamente!');
   };
 
+  const handleSaveWompi = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setConfigLoading(true);
+    setUploadSuccess(null);
+    setUploadError(null);
+    try {
+      const res = await fetch('/api/admin/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'wompi',
+          payload: wompiConfig
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setUploadSuccess('¡Configuración de Pasarela Wompi guardada y activa en caliente en Supabase!');
+      } else {
+        setUploadError(data.error || 'No se pudo guardar la configuración.');
+      }
+    } catch (err: any) {
+      setUploadError(err.message || 'Error al guardar la pasarela.');
+    } finally {
+      setConfigLoading(false);
+    }
+  };
+
+  const handleAddGroqKey = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newGroqKey.key_value.trim() || !newGroqKey.key_label.trim()) return;
+
+    setConfigLoading(true);
+    setUploadSuccess(null);
+    setUploadError(null);
+    try {
+      const res = await fetch('/api/admin/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'groq_add',
+          payload: newGroqKey
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setUploadSuccess('¡Clave API de Groq agregada y estructurada en el balanceador!');
+        setNewGroqKey({ key_value: '', key_label: '' });
+        fetchDynamicConfig();
+      } else {
+        setUploadError(data.error || 'No se pudo registrar la clave.');
+      }
+    } catch (err: any) {
+      setUploadError(err.message || 'Error al agregar clave.');
+    } finally {
+      setConfigLoading(false);
+    }
+  };
+
+  const handleToggleGroqKey = async (id: string, currentStatus: boolean) => {
+    setUploadSuccess(null);
+    setUploadError(null);
+    try {
+      const res = await fetch('/api/admin/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'groq_toggle',
+          payload: { id, activo: !currentStatus }
+        })
+      });
+      if (res.ok) {
+        setGroqKeys(prev => prev.map(k => k.id === id ? { ...k, activo: !currentStatus } : k));
+        setUploadSuccess('¡Estado de la clave de Groq actualizado con éxito!');
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleDeleteGroqKey = async (id: string) => {
+    if (!confirm('¿Estás seguro de eliminar esta clave de Groq de la rotación dinámica?')) return;
+
+    setUploadSuccess(null);
+    setUploadError(null);
+    try {
+      const res = await fetch('/api/admin/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'groq_delete',
+          payload: { id }
+        })
+      });
+      if (res.ok) {
+        setGroqKeys(prev => prev.filter(k => k.id !== id));
+        setUploadSuccess('¡Clave API de Groq eliminada exitosamente!');
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#070913] text-slate-100 flex flex-col justify-center items-center">
@@ -290,11 +427,35 @@ export default function AdminDashboard() {
               Configuración de Logo
             </button>
 
+            <button 
+              onClick={() => setActiveTab('b2b_classes')}
+              className={`w-full px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-3 text-left transition-all ${
+                activeTab === 'b2b_classes' 
+                  ? 'bg-white/5 border border-white/5 text-white' 
+                  : 'hover:bg-white/5 border border-transparent hover:border-white/5 text-slate-400 hover:text-white'
+              }`}
+            >
+              <GraduationCap className="w-4 h-4 text-purple-400" />
+              Gestión de Aulas B2B
+            </button>
+
+            <button 
+              onClick={() => setActiveTab('config')}
+              className={`w-full px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-3 text-left transition-all ${
+                activeTab === 'config' 
+                  ? 'bg-white/5 border border-white/5 text-white' 
+                  : 'hover:bg-white/5 border border-transparent hover:border-white/5 text-slate-400 hover:text-white'
+              }`}
+            >
+              <Settings className="w-4 h-4 text-purple-400" />
+              Configuración Dinámica
+            </button>
+
             <Link 
               href="/dashboard"
               className="w-full px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-3 hover:bg-white/5 border border-transparent hover:border-white/5 text-slate-400 hover:text-white transition-all block"
             >
-              <GraduationCap className="w-4 h-4 text-cyan-400" />
+              <GraduationCap className="w-4 h-4 text-cyan-450" />
               Ir al Aula de Prueba
             </Link>
           </nav>
@@ -503,7 +664,7 @@ export default function AdminDashboard() {
               </table>
             </div>
           </div>
-        ) : (
+        ) : activeTab === 'branding' ? (
           /* NUEVO PANEL DE CONFIGURACIÓN DE BRANDING Y LOGO */
           <div className="space-y-6">
             {/* Mensajes de Alerta */}
@@ -621,7 +782,317 @@ export default function AdminDashboard() {
                 Si por alguna razón técnica la base de datos tuviese restricciones de escritura o almacenamiento, tu panel cuenta con un sistema de reserva inteligente (fallback) que guardará la imagen de forma local de inmediato para que sigas visualizándola sin interrupción.
               </p>
             </div>
+          </div>
+        ) : activeTab === 'b2b_classes' ? (
+          /* GESTIÓN DE AULAS B2B (SENA / COLEGIOS) - NUEVO */
+          <div className="space-y-8 animate-fade-in">
+            {/* Header del Módulo */}
+            <div className="p-6 rounded-2xl border border-purple-500/10 bg-purple-950/5 flex flex-col sm:flex-row justify-between items-center gap-4">
+              <div>
+                <h3 className="font-outfit font-black text-sm text-white">Módulo de Licenciamiento B2B & Aulas Inteligentes</h3>
+                <p className="text-slate-400 text-[10px] mt-0.5 max-w-xl">
+                  Administra las cohorts de estudiantes vinculados por instituciones educativas asociadas (SENA, Colegios Técnicos e Institutos) y realiza seguimiento masivo a sus evaluaciones por IA.
+                </p>
+              </div>
+              <button
+                onClick={() => alert('¡Simulación B2B! Para habilitar integraciones de base de datos SENA reales, por favor contactar al equipo de J&M Tech Solutions.')}
+                className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs transition-all cursor-pointer shrink-0"
+              >
+                + Crear Nueva Aula B2B
+              </button>
+            </div>
 
+            {/* Listado de Aulas Simuladas de Alta Calidad */}
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* Aula 1: SENA */}
+              <div className="p-6 rounded-2xl border border-white/5 bg-slate-900/20 space-y-4 flex flex-col justify-between group">
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="px-2 py-0.5 rounded text-[8px] font-bold bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                      VINCULACIÓN SENA ACTIVA
+                    </span>
+                    <span className="text-[10px] font-bold text-slate-500">Código: SENA-ADSO-271</span>
+                  </div>
+                  
+                  <h3 className="font-outfit font-extrabold text-sm text-white group-hover:text-purple-300 transition-all">
+                    Análisis y Desarrollo de Software - Ficha 2711320
+                  </h3>
+                  
+                  <p className="text-slate-400 text-xs leading-relaxed">
+                    Grupo de tecnólogos en informática en Villavicencio cursando inglés técnico aplicado.
+                  </p>
+                </div>
+
+                <div className="pt-4 border-t border-white/5 grid grid-cols-3 gap-2 text-center">
+                  <div>
+                    <span className="block text-[8px] text-slate-500 font-bold uppercase">Alumnos</span>
+                    <span className="font-bold text-sm text-white">28</span>
+                  </div>
+                  <div>
+                    <span className="block text-[8px] text-slate-500 font-bold uppercase">Nivel Prom.</span>
+                    <span className="font-bold text-sm text-cyan-400">A2</span>
+                  </div>
+                  <div>
+                    <span className="block text-[8px] text-slate-500 font-bold uppercase">Prom. IA</span>
+                    <span className="font-bold text-sm text-emerald-400">84%</span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => alert('Visualizando reportes del SENA: Alumnos con promedio general A2 y 92% de tareas completadas.')}
+                  className="w-full mt-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-350 font-bold text-xs transition-all cursor-pointer text-center block"
+                >
+                  Ver Planilla de Notas AI
+                </button>
+              </div>
+
+              {/* Aula 2: Colegio Técnico */}
+              <div className="p-6 rounded-2xl border border-white/5 bg-slate-900/20 space-y-4 flex flex-col justify-between group">
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="px-2 py-0.5 rounded text-[8px] font-bold bg-cyan-500/10 border border-cyan-500/20 text-cyan-400">
+                      VINCULACIÓN COLEGIO ACTIVA
+                    </span>
+                    <span className="text-[10px] font-bold text-slate-500">Código: COLTEC-11B</span>
+                  </div>
+                  
+                  <h3 className="font-outfit font-extrabold text-sm text-white group-hover:text-purple-300 transition-all">
+                    Colegio Técnico Industrial - Grado 11-B
+                  </h3>
+                  
+                  <p className="text-slate-400 text-xs leading-relaxed">
+                    Estudiantes de último año preparándose para las pruebas de Estado y empleo joven.
+                  </p>
+                </div>
+
+                <div className="pt-4 border-t border-white/5 grid grid-cols-3 gap-2 text-center">
+                  <div>
+                    <span className="block text-[8px] text-slate-500 font-bold uppercase">Alumnos</span>
+                    <span className="font-bold text-sm text-white">35</span>
+                  </div>
+                  <div>
+                    <span className="block text-[8px] text-slate-500 font-bold uppercase">Nivel Prom.</span>
+                    <span className="font-bold text-sm text-cyan-400">A1</span>
+                  </div>
+                  <div>
+                    <span className="block text-[8px] text-slate-500 font-bold uppercase">Prom. IA</span>
+                    <span className="font-bold text-sm text-emerald-400">76%</span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => alert('Visualizando reportes de Grado 11-B: Alumnos con promedio general A1 y 68% de tareas completadas.')}
+                  className="w-full mt-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-350 font-bold text-xs transition-all cursor-pointer text-center block"
+                >
+                  Ver Planilla de Notas AI
+                </button>
+              </div>
+            </div>
+
+            {/* Guía de ventas B2B */}
+            <div className="p-6 rounded-2xl border border-white/5 bg-slate-900/10 space-y-2">
+              <h4 className="font-bold text-xs text-white">💡 Estrategia de Venta Comercial B2B por Manuel Madrid</h4>
+              <p className="text-slate-400 text-[10px] leading-relaxed">
+                Este panel te permite demostrar a directores del SENA y rectores la capacidad única de **JyM LingoBridge AI** de realizar seguimiento automático e imparcial a cientos de entregas mediante IA. Puedes proponer licencias B2B anuales de **$280.000 COP** por aula o licencias masivas a convenir, automatizando al 100% el trabajo evaluativo del profesor.
+              </p>
+            </div>
+          </div>
+        ) : (
+          /* NUEVO PANEL DE CONFIGURACIÓN DINÁMICA (WOMPI Y GROQ) */
+          <div className="space-y-8 animate-fade-in">
+            {/* Mensajes de feedback */}
+            {uploadError && (
+              <div className="p-4 rounded-xl bg-red-950/30 border border-red-500/20 text-red-300 text-xs flex items-center gap-3 animate-shake">
+                <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
+                <span>{uploadError}</span>
+              </div>
+            )}
+            
+            {uploadSuccess && (
+              <div className="p-4 rounded-xl bg-emerald-950/30 border border-emerald-500/20 text-emerald-300 text-xs flex items-center gap-3">
+                <Check className="w-5 h-5 text-emerald-400 shrink-0" />
+                <span>{uploadSuccess}</span>
+              </div>
+            )}
+
+            <div className="grid md:grid-cols-2 gap-8">
+              
+              {/* Lado 1: Formulario Wompi */}
+              <form onSubmit={handleSaveWompi} className="p-6 rounded-2xl border border-white/5 bg-slate-900/20 space-y-4">
+                <h3 className="font-outfit font-black text-sm text-white border-b border-white/5 pb-2 flex items-center gap-2">
+                  <Settings className="w-4.5 h-4.5 text-purple-400" />
+                  Conexión Pasarela Wompi Colombia
+                </h3>
+                
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-widest">Wompi Public Key (Sandbox/Production)</label>
+                    <input
+                      type="text"
+                      value={wompiConfig.wompi_public_key || ''}
+                      onChange={(e) => setWompiConfig({ ...wompiConfig, wompi_public_key: e.target.value })}
+                      placeholder="pub_test_..."
+                      className="w-full p-2.5 bg-black/45 border border-white/10 rounded-xl text-xs text-white focus:border-cyan-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-widest">Wompi Integrity Key (Firma Segura)</label>
+                    <input
+                      type="text"
+                      value={wompiConfig.wompi_integrity_key || ''}
+                      onChange={(e) => setWompiConfig({ ...wompiConfig, wompi_integrity_key: e.target.value })}
+                      placeholder="prod_integrity_..."
+                      className="w-full p-2.5 bg-black/45 border border-white/10 rounded-xl text-xs text-white focus:border-cyan-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-widest">Wompi Merchant ID</label>
+                    <input
+                      type="text"
+                      value={wompiConfig.wompi_merchant_id || ''}
+                      onChange={(e) => setWompiConfig({ ...wompiConfig, wompi_merchant_id: e.target.value })}
+                      placeholder="12345"
+                      className="w-full p-2.5 bg-black/45 border border-white/10 rounded-xl text-xs text-white focus:border-cyan-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-widest">Enlace de Pago Directo Plan Estudiante</label>
+                    <input
+                      type="text"
+                      value={wompiConfig.wompi_enlace_estudiante || ''}
+                      onChange={(e) => setWompiConfig({ ...wompiConfig, wompi_enlace_estudiante: e.target.value })}
+                      placeholder="https://checkout.wompi.co/l/..."
+                      className="w-full p-2.5 bg-black/45 border border-white/10 rounded-xl text-xs text-white focus:border-cyan-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-widest">Enlace de Pago Directo Plan Institucional</label>
+                    <input
+                      type="text"
+                      value={wompiConfig.wompi_enlace_institucional || ''}
+                      onChange={(e) => setWompiConfig({ ...wompiConfig, wompi_enlace_institucional: e.target.value })}
+                      placeholder="https://checkout.wompi.co/l/..."
+                      className="w-full p-2.5 bg-black/45 border border-white/10 rounded-xl text-xs text-white focus:border-cyan-500 focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between p-2 rounded-xl bg-black/30 border border-white/5">
+                    <span className="text-[10px] font-bold text-slate-450 uppercase tracking-widest">Sandbox Mode (Pruebas)</span>
+                    <button
+                      type="button"
+                      onClick={() => setWompiConfig({ ...wompiConfig, wompi_sandbox_mode: wompiConfig.wompi_sandbox_mode === 'true' ? 'false' : 'true' })}
+                      className={`px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer ${
+                        wompiConfig.wompi_sandbox_mode === 'true' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                      }`}
+                    >
+                      {wompiConfig.wompi_sandbox_mode === 'true' ? 'Activo (Sandbox)' : 'Inactivo (Producción)'}
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={configLoading}
+                  className="w-full py-3 bg-gradient-to-r from-purple-600 to-cyan-500 hover:opacity-90 disabled:opacity-50 text-white rounded-xl text-xs font-bold transition-all shadow-lg border border-white/5 uppercase tracking-wider cursor-pointer"
+                >
+                  {configLoading ? 'Guardando en Supabase...' : 'Guardar Pasarela Wompi'}
+                </button>
+              </form>
+
+              {/* Lado 2: Gestión de Claves Groq */}
+              <div className="space-y-6">
+                
+                {/* Formulario para Agregar */}
+                <form onSubmit={handleAddGroqKey} className="p-6 rounded-2xl border border-white/5 bg-slate-900/20 space-y-4">
+                  <h3 className="font-outfit font-black text-sm text-white border-b border-white/5 pb-2 flex items-center gap-2">
+                    <Cpu className="w-4.5 h-4.5 text-purple-400" />
+                    Registrar Clave API de Groq en Vivo
+                  </h3>
+                  
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-widest">Clave API de Groq (gsk_...)</label>
+                      <input
+                        type="password"
+                        value={newGroqKey.key_value}
+                        onChange={(e) => setNewGroqKey({ ...newGroqKey, key_value: e.target.value })}
+                        placeholder="gsk_..."
+                        className="w-full p-2.5 bg-black/45 border border-white/10 rounded-xl text-xs text-white focus:border-purple-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-widest">Etiqueta Identificadora (Alias)</label>
+                      <input
+                        type="text"
+                        value={newGroqKey.key_label}
+                        onChange={(e) => setNewGroqKey({ ...newGroqKey, key_label: e.target.value })}
+                        placeholder="Ej. Clave 5 - Manuel Madrid"
+                        className="w-full p-2.5 bg-black/45 border border-white/10 rounded-xl text-xs text-white focus:border-purple-500 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={configLoading || !newGroqKey.key_value || !newGroqKey.key_label}
+                    className="w-full py-3 bg-slate-800 hover:bg-slate-750 text-white rounded-xl text-xs font-bold border border-white/5 transition-all uppercase tracking-wider cursor-pointer"
+                  >
+                    {configLoading ? 'Registrando...' : 'Registrar y Activar Clave'}
+                  </button>
+                </form>
+
+                {/* Listado de Claves */}
+                <div className="p-6 rounded-2xl border border-white/5 bg-slate-900/20 space-y-4">
+                  <h3 className="font-outfit font-black text-sm text-white border-b border-white/5 pb-2 flex items-center gap-2">
+                    <Layers className="w-4.5 h-4.5 text-purple-400" />
+                    Claves en Caliente Registradas ({groqKeys.length})
+                  </h3>
+
+                  {groqKeys.length === 0 ? (
+                    <p className="text-[10px] text-slate-500 text-center py-4">
+                      No hay llaves dinámicas registradas en la base de datos. El servidor está operando bajo las llaves estáticas de .env.local de forma segura.
+                    </p>
+                  ) : (
+                    <div className="space-y-3 max-h-[220px] overflow-y-auto custom-scrollbar pr-1">
+                      {groqKeys.map((k) => (
+                        <div key={k.id} className="p-3 rounded-xl bg-black/40 border border-white/5 flex justify-between items-center gap-4">
+                          <div>
+                            <span className="font-bold text-xs text-white block">{k.key_label}</span>
+                            <span className="text-[9px] text-slate-500 font-mono">gsk_...{k.key_value.slice(-6)}</span>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleToggleGroqKey(k.id, k.activo)}
+                              className={`px-2.5 py-1 rounded text-[8px] font-black uppercase tracking-wider cursor-pointer ${
+                                k.activo ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                              }`}
+                            >
+                              {k.activo ? 'Activa' : 'Inactiva'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteGroqKey(k.id)}
+                              className="px-2.5 py-1 rounded text-[8px] font-black uppercase bg-red-950/20 hover:bg-red-900/20 text-red-300 border border-red-500/20 cursor-pointer"
+                            >
+                              Eliminar
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+              </div>
+
+            </div>
           </div>
         )}
 

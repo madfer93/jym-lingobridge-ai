@@ -108,10 +108,41 @@ function DeconstructorContent() {
     fetchUserData();
   }, [router]);
 
-  // Ejecutar deconstrucción automática si viene task por la URL
+  // Ejecutar deconstrucción automática si viene task por la URL o localStorage
   useEffect(() => {
-    if (initialTask && profile) {
-      handleDeconstruct();
+    if (profile) {
+      const localDraft = localStorage.getItem('lingobridge_deconstruct_draft');
+      if (localDraft) {
+        setSentenceInput(localDraft);
+        localStorage.removeItem('lingobridge_deconstruct_draft');
+        setAnalyzing(true);
+        setDeconstructError('');
+        setDeconstructData(null);
+        setOrderedSentence([]);
+        setCheckStatus('untested');
+
+        fetch('/api/deconstruct', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sentence: localDraft })
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data.error) throw new Error(data.error);
+          setDeconstructData(data);
+          const shuffled = [...data.words].sort(() => Math.random() - 0.5);
+          setShuffledWords(shuffled);
+        })
+        .catch(err => {
+          console.error(err);
+          setDeconstructError(err.message || 'Ocurrió un error al intentar analizar la oración.');
+        })
+        .finally(() => {
+          setAnalyzing(false);
+        });
+      } else if (initialTask) {
+        handleDeconstruct();
+      }
     }
   }, [initialTask, profile]);
 

@@ -95,3 +95,22 @@ CREATE TABLE IF NOT EXISTS compras_planes (
     estado TEXT DEFAULT 'activo' CHECK (estado IN ('activo', 'cancelado', 'expirado')),
     fecha_compra TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
+
+
+-- 6. CONFIGURACIÓN DE PASARELAS DE PAGO (Wompi)
+CREATE TABLE IF NOT EXISTS configuracion_pasarela (
+    key_name TEXT PRIMARY KEY,
+    key_value TEXT NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+
+-- 7. CLAVES DE API DE GROQ EN CALIENTE (Para rotación ilimitada)
+CREATE TABLE IF NOT EXISTS configuracion_groq_keys (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    key_value TEXT UNIQUE NOT NULL,
+    key_label TEXT NOT NULL,
+    activo BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+

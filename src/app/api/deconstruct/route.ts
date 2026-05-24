@@ -9,7 +9,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'La oración es obligatoria y debe ser un texto.' }, { status: 400 });
     }
 
-    const groq = getGroqClient('landing');
+    const groq = await getGroqClient('landing');
 
     const promptSystem = `Eres un experto lingüista y coach educativo de inglés como segundo idioma (ESL) bajo el Marco Común Europeo de Referencia (MCER).
 Tu tarea es deconstruir sintácticamente la oración en inglés provista por el usuario y retornar un objeto JSON estructurado que desglose cada parte de forma visual y pedagógica.

@@ -22,7 +22,13 @@ import {
   HelpCircle,
   User,
   LogOut,
-  Construction
+  Construction,
+  Star,
+  Users,
+  BarChart3,
+  Mail,
+  Mic,
+  Cpu
 } from 'lucide-react';
 import Link from 'next/link';
 import jsPDF from 'jspdf';
@@ -406,34 +412,76 @@ export default function ExamPage() {
           )}
 
           {/* Enlaces de Navegación */}
-          <nav className="space-y-2">
+          <nav className="space-y-1.5 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar">
             <Link 
               href="/dashboard" 
-              className="w-full px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-3 hover:bg-white/5 border border-transparent hover:border-white/5 text-slate-400 hover:text-white transition-all block"
+              className="w-full px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2.5 hover:bg-white/5 border border-transparent hover:border-white/5 text-slate-400 hover:text-white transition-all block"
             >
-              <BookOpen className="w-4 h-4 text-purple-400" />
+              <Cpu className="w-4 h-4 text-purple-400" />
               Panel de Control
             </Link>
             <Link 
               href="/deconstructor" 
-              className="w-full px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-3 hover:bg-white/5 border border-transparent hover:border-white/5 text-slate-400 hover:text-white transition-all block"
+              className="w-full px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2.5 hover:bg-white/5 border border-transparent hover:border-white/5 text-slate-400 hover:text-white transition-all block"
             >
               <Layers className="w-4 h-4 text-cyan-400" />
               Deconstructor Visual
             </Link>
             <Link 
               href="/dashboard/challenges" 
-              className="w-full px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-3 hover:bg-white/5 border border-transparent hover:border-white/5 text-slate-400 hover:text-white transition-all block"
+              className="w-full px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2.5 hover:bg-white/5 border border-transparent hover:border-white/5 text-slate-400 hover:text-white transition-all block"
             >
-              <Sparkles className="w-4 h-4 text-purple-400 animate-pulse" />
-              Tareas Evaluadas por IA
+              <Sparkles className="w-4 h-4 text-purple-400" />
+              Tareas por IA
             </Link>
             <Link 
               href="/dashboard/exam" 
-              className="w-full px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-3 bg-white/5 border border-white/5 text-white transition-all block"
+              className="w-full px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2.5 bg-white/5 border border-white/5 text-white transition-all block"
             >
               <Award className="w-4 h-4 text-cyan-400" />
               Examen & Certificado
+            </Link>
+            <Link 
+              href="/dashboard/glossary" 
+              className="w-full px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2.5 hover:bg-white/5 border border-transparent hover:border-white/5 text-slate-400 hover:text-white transition-all block"
+            >
+              <BookOpen className="w-4 h-4 text-cyan-400" />
+              Glosario Técnico
+            </Link>
+            <Link 
+              href="/dashboard/flashcards" 
+              className="w-full px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2.5 hover:bg-white/5 border border-transparent hover:border-white/5 text-slate-400 hover:text-white transition-all block"
+            >
+              <Star className="w-4 h-4 text-amber-400" />
+              Flashcards SRS
+            </Link>
+            <Link 
+              href="/dashboard/interview" 
+              className="w-full px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2.5 hover:bg-white/5 border border-transparent hover:border-white/5 text-slate-400 hover:text-white transition-all block"
+            >
+              <Mic className="w-4 h-4 text-purple-400" />
+              Entrevistas AI
+            </Link>
+            <Link 
+              href="/dashboard/mailer" 
+              className="w-full px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2.5 hover:bg-white/5 border border-transparent hover:border-white/5 text-slate-400 hover:text-white transition-all block"
+            >
+              <Mail className="w-4 h-4 text-cyan-400" />
+              SaaS Mailer
+            </Link>
+            <Link 
+              href="/dashboard/leaderboard" 
+              className="w-full px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2.5 hover:bg-white/5 border border-transparent hover:border-white/5 text-slate-400 hover:text-white transition-all block"
+            >
+              <Users className="w-4 h-4 text-purple-400" />
+              Ranquin Global
+            </Link>
+            <Link 
+              href="/dashboard/progress" 
+              className="w-full px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2.5 hover:bg-white/5 border border-transparent hover:border-white/5 text-slate-400 hover:text-white transition-all block"
+            >
+              <BarChart3 className="w-4 h-4 text-cyan-400" />
+              Mi Progreso
             </Link>
           </nav>
         </div>

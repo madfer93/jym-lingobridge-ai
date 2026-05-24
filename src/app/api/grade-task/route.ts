@@ -19,7 +19,7 @@ export async function POST(request: Request) {
 
     const { nombre = 'Estudiante', nivel_cefr = 'A1', enfoque_industria = 'general' } = userProfile || {};
 
-    const groq = getGroqClient('edu'); // Rotación Round-Robin socrática
+    const groq = await getGroqClient('edu'); // Rotación Round-Robin socrática
 
     // Prompt del sistema para evaluación de tareas contundentes
     const promptSystem = `Eres el Evaluador Técnico y Coach de Inglés de J&M Tech Solutions para la plataforma "JyM LingoBridge AI".

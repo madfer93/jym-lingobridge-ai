@@ -11,7 +11,7 @@ export async function POST(request: Request) {
 
     const { level = 'A1', industry = 'general', name = 'Estudiante' } = userProfile || {};
 
-    const groq = getGroqClient('edu'); // Rotación Round-Robin inteligente entre Educadores IA 1, 2 y 3
+    const groq = await getGroqClient('edu'); // Rotación Round-Robin inteligente entre Educadores IA 1, 2 y 3
 
     // Prompt de sistema pedagógico ultra refinado (Técnica Socrática y Contextual)
     const promptSystem = `Eres el Coach de Inglés de J&M Tech Solutions para la plataforma de aprendizaje activo "JyM LingoBridge AI".
