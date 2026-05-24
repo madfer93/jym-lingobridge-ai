@@ -18,7 +18,8 @@ import {
   HelpCircle,
   Construction,
   Cpu,
-  LineChart
+  LineChart,
+  Check
 } from 'lucide-react';
 import Link from 'next/link';
 
